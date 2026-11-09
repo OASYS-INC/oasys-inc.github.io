@@ -1,0 +1,114 @@
+
+name: Publish OASYS Contacts
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+
+      - name: Generate full-data QR
+        run: |
+          python -m pip install segno==1.6.6
+          python - <<'PY'
+          from pathlib import Path
+          import segno
+
+          source = Path("contact/greg-bacon.vcf")
+          output = Path("contact/greg-bacon/contact-qr.png")
+
+          data = source.read_bytes()
+
+          # Require the original vCard 3.0 bytes,
+          # including standards-compliant CRLF endings.
+          assert data.startswith(
+              b"BEGIN:VCARD\r\nVERSION:3.0\r\n"
+          ), "Invalid vCard header"
+
+          assert data.endswith(
+              b"END:VCARD\r\n"
+          ), "Invalid vCard ending"
+
+          assert b"\n" not in data.replace(b"\r\n", b""), \
+              "Unexpected LF line ending"
+          assert b"\r" not in data.replace(b"\r\n", b""), \
+              "Unexpected CR line ending"
+
+          assert b"FN:" in data
+          assert b"N:" in data
+          assert b"EMAIL" in data
+
+          # Encode the original bytes without modification.
+          qr = segno.make(
+              data,
+              mode="byte",
+              error="h",
+              boost_error=False,
+          )
+
+          output.parent.mkdir(
+              parents=True, exist_ok=True
+          )
+
+          qr.save(
+              output,
+              scale=10,
+              border=4,
+              dark="#173F62",
+              light="#FFFFFF",
+          )
+
+          print(f"Generated {output}")
+          print(f"Payload size: {len(data)} bytes")
+          print(f"QR version: {qr.version}")
+          PY
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./
+          destination: ./_site
+
+      - name: Verify published content
+        run: |
+          test -s _site/index.html
+          test -s _site/oasys-on-white.svg
+          test -s _site/contact/greg-bacon.vcf
+          test -s _site/contact/greg-bacon/index.html
+          test -s _site/contact/greg-bacon/contact-qr.png
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./_site
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

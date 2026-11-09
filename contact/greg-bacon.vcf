@@ -1,0 +1,12 @@
+BEGIN:VCARD
+VERSION:3.0
+FN:Greg Bacon
+N:Bacon;Greg;;;Ph.D.
+ORG:OASYS\, INC.
+TITLE:Chief Technology Officer
+TEL;TYPE=CELL,VOICE:+1-256-468-0959
+EMAIL;TYPE=WORK,INTERNET,PREF:greg.bacon@oasys-incorporated.com
+EMAIL;TYPE=WORK,INTERNET:greg.bacon@oasys-inc.com
+ADR;TYPE=WORK:;;530 Discovery Dr NW\, Bldg 1 Floor 1;Huntsville;AL;35806;United States
+URL;TYPE=WORK:https://oasys-inc.com/
+END:VCARD
